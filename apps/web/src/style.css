@@ -1,0 +1,1409 @@
+/*
+  SoundFX — visual identity and responsive layout.
+
+  Identity notes (D1): deliberately not the soft-pastel, rounded "calm app"
+  language every competitor shares. This reads closer to a scientific
+  instrument — dark field, thin geometric type, live numeric readouts, and a
+  single generative visual that IS the data rather than decoration around it.
+  Hue is never a fixed brand colour: the field's hue is a direct function of
+  the control vector, so the UI demonstrates "no two sessions look alike" the
+  same way the audio does.
+
+  Layout strategy: mobile-first, with an 11-inch tablet as the primary target.
+    base            phone portrait — single column, stage over tabbed panels
+    >= 640px        tablet portrait — same shape, two-up panel grid
+    >= 1024px       tablet landscape / desktop — stage beside a tabbed sidebar
+
+  The side panel carries eight panels' worth of instrumentation. On a touch
+  device that is far too much vertical scroll, so panels are grouped into
+  three tabs (Now / Plan / Data) rather than stacked into one long column.
+*/
+
+:root {
+  --bg: #05060a;
+  --bg-raised: #0b0d14;
+  --bg-sunken: #070810;
+  --line: #1c2030;
+  --line-strong: #2a3044;
+  --text: #e8eaf2;
+  --text-dim: #8890a8;
+  --text-faint: #545c74;
+  --accent: #7cf0c8;
+  --accent-dim: rgba(124, 240, 200, 0.14);
+  --danger: #f0797c;
+  --radius: 14px;
+  --radius-sm: 10px;
+  --mono: "IBM Plex Mono", "SFMono-Regular", ui-monospace, Menlo, Consolas, monospace;
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", ui-sans-serif, system-ui, sans-serif;
+
+  /* Minimum comfortable touch target. Every interactive element meets this. */
+  --tap: 44px;
+
+  --pad: 16px;
+  --stage-h: 42vh;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  /* Stop iOS inflating type in landscape, and rubber-banding the whole page. */
+  -webkit-text-size-adjust: 100%;
+  overscroll-behavior-y: contain;
+}
+
+#app {
+  /* A fixed-height app shell, so the side panel scrolls internally instead of
+     the whole page scrolling and carrying the stage off-screen. dvh tracks the
+     mobile toolbar collapsing; vh is the fallback for older engines. */
+  height: 100vh;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* =========================================================== topbar */
+
+/*
+  Single row even on the narrowest phone. Stacking the wordmark above the mode
+  strip cost ~35px of vertical space — over 5% of a small phone's viewport —
+  to gain one more visible mode chip. The strip scrolls and auto-scrolls the
+  active chip into view, so the space is the better trade.
+*/
+.topbar {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  padding: calc(10px + env(safe-area-inset-top)) var(--pad) 10px;
+  border-bottom: 1px solid var(--line);
+  flex: none;
+}
+
+.wordmark {
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  flex: none;
+}
+.wordmark b {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.modes {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  gap: 6px;
+  background: var(--bg-raised);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 4px;
+  /* Five modes do not fit a phone. Scroll them rather than wrapping into a
+     second row that pushes the stage down. */
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x proximity;
+}
+.modes::-webkit-scrollbar {
+  display: none;
+}
+
+.mode-btn {
+  appearance: none;
+  flex: 0 0 auto;
+  scroll-snap-align: start;
+  border: none;
+  background: transparent;
+  color: var(--text-dim);
+  font-family: var(--sans);
+  font-size: 14px;
+  min-height: var(--tap);
+  padding: 10px 18px;
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s, color 0.2s;
+}
+.mode-btn:hover {
+  color: var(--text);
+}
+.mode-btn.active {
+  background: var(--accent);
+  color: #04140f;
+  font-weight: 600;
+}
+
+/* ============================================================= main */
+
+.main {
+  flex: 1;
+  min-height: 0; /* required for the child scroll containers to work */
+  display: flex;
+  flex-direction: column;
+}
+
+/* ============================================================ stage */
+
+.stage {
+  position: relative;
+  flex: none;
+  height: var(--stage-h);
+  min-height: 240px;
+  overflow: hidden;
+  border-bottom: 1px solid var(--line);
+}
+
+/* The generative field is a background layer; all controls flow above it. */
+.stage canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: block;
+}
+
+.stage-content {
+  position: relative;
+  z-index: 1;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px var(--pad);
+}
+
+.stage-bottom {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+/* ======================================================== transport */
+
+.transport {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.begin-btn {
+  appearance: none;
+  border: 1px solid var(--accent);
+  background: rgba(124, 240, 200, 0.1);
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  min-height: var(--tap);
+  padding: 12px 32px;
+  border-radius: 999px;
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+  transition: background 0.2s, transform 0.15s;
+}
+.begin-btn:hover {
+  background: rgba(124, 240, 200, 0.18);
+}
+.begin-btn:active {
+  transform: scale(0.98);
+}
+.begin-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.begin-btn.ending {
+  border-color: var(--text-faint);
+  color: var(--text-dim);
+  background: rgba(11, 13, 20, 0.6);
+}
+
+.hint {
+  font-size: 12px;
+  color: var(--text-faint);
+  font-family: var(--mono);
+  text-align: center;
+  line-height: 1.5;
+  max-width: 42ch;
+}
+
+/* ==================================================== phase banner */
+
+.phase-banner {
+  align-self: center;
+  width: 100%;
+  max-width: 460px;
+  background: rgba(11, 13, 20, 0.85);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+  backdrop-filter: blur(8px);
+}
+
+.phase-name {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 5px;
+}
+
+.phase-intent {
+  font-size: 13px;
+  color: var(--text-dim);
+  line-height: 1.5;
+  margin-bottom: 10px;
+}
+
+.phase-track {
+  height: 3px;
+  background: var(--line);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.phase-fill {
+  height: 100%;
+  width: 0%;
+  background: var(--accent);
+  border-radius: 2px;
+  transition: width 0.4s linear;
+}
+
+/* ==================================================== breath pacer */
+
+.breath-wrap {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: rgba(11, 13, 20, 0.72);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  backdrop-filter: blur(6px);
+}
+
+.breath-ring-outer {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--line-strong);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+
+.breath-ring-inner {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--accent);
+  transform: scale(0.3);
+  will-change: transform, opacity;
+}
+
+.breath-text {
+  font-size: 12px;
+  color: var(--text-faint);
+  line-height: 1.5;
+}
+.breath-text b {
+  color: var(--text-dim);
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+/* ================================================= distress notice */
+
+.distress-notice {
+  align-self: center;
+  width: 100%;
+  max-width: 480px;
+  background: var(--bg-raised);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-dim);
+}
+.distress-notice a {
+  color: var(--accent);
+}
+.distress-dismiss {
+  appearance: none;
+  background: transparent;
+  border: none;
+  color: var(--text-faint);
+  font-size: 13px;
+  cursor: pointer;
+  min-height: var(--tap);
+  padding: 10px 0 0;
+  text-decoration: underline;
+}
+
+/* ============================================================ side */
+
+.side {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-sunken);
+}
+
+.tabs {
+  display: flex;
+  gap: 2px;
+  padding: 8px var(--pad) 0;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg-sunken);
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  flex: none;
+}
+
+.tab-btn {
+  appearance: none;
+  flex: 1 1 0;
+  border: none;
+  background: transparent;
+  color: var(--text-faint);
+  font-family: var(--sans);
+  font-size: 14px;
+  min-height: var(--tap);
+  padding: 10px 8px;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: color 0.2s, border-color 0.2s;
+}
+.tab-btn:hover {
+  color: var(--text-dim);
+}
+.tab-btn[aria-selected="true"] {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+  font-weight: 500;
+}
+
+/* The scroll container holds the panels AND the privacy note, so the note
+   stays reachable without permanently occupying phone-height. */
+.side-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.tab-panels {
+  padding: var(--pad);
+}
+
+.tab-panel[hidden] {
+  display: none;
+}
+
+.tab-panel {
+  display: grid;
+  gap: 14px;
+  align-content: start;
+}
+
+/* =========================================================== panels */
+
+.panel {
+  background: var(--bg-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: var(--pad);
+}
+
+.panel h3 {
+  margin: 0 0 12px;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  font-weight: 600;
+}
+
+/* ======================================================= heart rate */
+
+.hr-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.hr-value {
+  font-family: var(--mono);
+  font-size: 38px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.hr-unit {
+  font-size: 13px;
+  color: var(--text-faint);
+}
+
+.hr-status {
+  font-size: 13px;
+  color: var(--text-dim);
+  min-height: 34px;
+  line-height: 1.55;
+}
+
+.camera-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 14px;
+  min-height: var(--tap);
+}
+.camera-toggle > span {
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+/*
+  The switch reads as a 48x28 track, but the <button> itself is 56x44 so the
+  tap target meets the minimum. The track and knob are drawn as pseudo-
+  elements centred inside that larger, transparent hit area.
+*/
+.switch {
+  appearance: none;
+  flex: none;
+  width: 56px;
+  height: var(--tap);
+  background: transparent;
+  border: none;
+  position: relative;
+  cursor: pointer;
+  padding: 0;
+}
+.switch::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 4px;
+  transform: translateY(-50%);
+  width: 48px;
+  height: 28px;
+  border-radius: 999px;
+  background: var(--line-strong);
+  transition: background 0.2s;
+}
+.switch::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 7px;
+  transform: translateY(-50%);
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--text-dim);
+  transition: transform 0.2s, background 0.2s;
+}
+.switch.on::before {
+  background: rgba(124, 240, 200, 0.28);
+}
+.switch.on::after {
+  transform: translateY(-50%) translateX(20px);
+  background: var(--accent);
+}
+.switch:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.self-view {
+  margin-top: 12px;
+  position: relative;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: #000;
+  aspect-ratio: 4 / 3;
+  border: 1px solid var(--line);
+}
+.self-view video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scaleX(-1);
+  display: block;
+}
+.self-view canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.self-view.hidden {
+  display: none;
+}
+
+.confidence-bar {
+  height: 3px;
+  background: var(--line);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 8px;
+}
+.confidence-fill {
+  height: 100%;
+  background: var(--accent);
+  width: 0%;
+  transition: width 0.3s;
+}
+
+.perm-banner {
+  background: rgba(240, 121, 124, 0.08);
+  border: 1px solid rgba(240, 121, 124, 0.3);
+  color: #f0b1b3;
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  font-size: 13px;
+  margin-top: 12px;
+  line-height: 1.5;
+}
+
+/* ==================================================== control vector */
+
+.vector-grid {
+  display: grid;
+  gap: 9px;
+}
+
+.vector-row {
+  display: grid;
+  grid-template-columns: 88px 1fr 44px;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--mono);
+  font-size: 11px;
+}
+
+.vector-label {
+  color: var(--text-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.vector-track {
+  height: 5px;
+  background: var(--line);
+  border-radius: 3px;
+  position: relative;
+  overflow: hidden;
+}
+
+.vector-fill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  background: linear-gradient(90deg, #4d6bff, var(--accent));
+  border-radius: 3px;
+  transition: width 0.15s linear;
+}
+
+.vector-num {
+  text-align: right;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ========================================================= telemetry */
+
+.telemetry-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 12px;
+  font-family: var(--mono);
+  font-size: 12px;
+}
+.telemetry-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.telemetry-item .k {
+  color: var(--text-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 10px;
+}
+.telemetry-item .v {
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ========================================================= protocols */
+
+.protocol-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.protocol-btn {
+  appearance: none;
+  text-align: left;
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  cursor: pointer;
+  color: var(--text);
+  font-family: var(--sans);
+  min-height: var(--tap);
+  transition: border-color 0.2s, background 0.2s;
+}
+.protocol-btn:hover {
+  border-color: var(--line-strong);
+}
+.protocol-btn.active {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+}
+.protocol-btn .p-name {
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: baseline;
+}
+.protocol-btn .p-dur {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-faint);
+  font-weight: 400;
+  flex: none;
+}
+.protocol-btn .p-desc {
+  font-size: 12px;
+  color: var(--text-faint);
+  line-height: 1.5;
+  margin-top: 4px;
+}
+
+/* ---------------------------------------------------- mode science */
+
+.sci-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+.sci-name {
+  font-size: 15px;
+  font-weight: 500;
+}
+
+/*
+  The evidence badge is always visible and colour-coded by strength. It is
+  never collapsed behind a disclosure — a product that shows citations
+  prominently while hiding caveats is using the citations as decoration.
+*/
+.sci-ev {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+  flex: none;
+}
+.ev-established {
+  color: var(--accent);
+}
+.ev-moderate {
+  color: #e8c07c;
+}
+.ev-mechanism {
+  color: var(--text-faint);
+}
+
+.sci-tagline {
+  font-size: 13px;
+  color: var(--text-dim);
+  line-height: 1.55;
+  margin: 0 0 14px;
+}
+
+.sci-block {
+  margin-bottom: 13px;
+}
+.sci-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  margin-bottom: 4px;
+}
+.sci-block p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.65;
+  color: var(--text-dim);
+}
+
+/* Limitations carry visual weight equal to the claims, not less. */
+.sci-limits {
+  border-left: 2px solid var(--line-strong);
+  padding-left: 11px;
+}
+
+.sci-cites {
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+  margin-top: 14px;
+}
+.sci-cites summary {
+  font-size: 11px;
+  color: var(--text-faint);
+  cursor: pointer;
+  list-style: none;
+  min-height: var(--tap);
+  display: flex;
+  align-items: center;
+}
+.sci-cites summary::-webkit-details-marker {
+  display: none;
+}
+.sci-cites summary::before {
+  content: "\203A";
+  margin-right: 6px;
+}
+.sci-cites[open] summary::before {
+  content: "\2304";
+}
+.sci-cites ul {
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.sci-cites li {
+  margin-bottom: 10px;
+  font-size: 11px;
+  line-height: 1.55;
+}
+.cite-ref {
+  display: block;
+  color: var(--text-dim);
+}
+.cite-sup {
+  display: block;
+  color: var(--text-faint);
+  margin-top: 2px;
+}
+.sci-none {
+  font-size: 12px;
+  color: var(--text-faint);
+  line-height: 1.65;
+  margin: 0;
+}
+
+/* Cadence control, shown only in Move mode. */
+.cadence-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+  padding-top: 13px;
+  border-top: 1px solid var(--line);
+}
+.cadence-row label {
+  font-size: 12px;
+  color: var(--text-dim);
+  flex: none;
+}
+.cadence-row input[type="range"] {
+  flex: 1;
+  min-width: 0;
+  height: var(--tap);
+  accent-color: var(--accent);
+  background: transparent;
+}
+.cadence-val {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--accent);
+  min-width: 66px;
+  text-align: right;
+  flex: none;
+}
+
+/* ============================================================ rhythm */
+
+.rhythm-curve {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+.rc-axis {
+  stroke: var(--line-strong);
+  stroke-width: 1;
+  stroke-dasharray: 2 3;
+}
+.rc-band {
+  fill: rgba(124, 240, 200, 0.13);
+  stroke: none;
+}
+.rc-line {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.8;
+  stroke-linejoin: round;
+}
+.rc-now {
+  fill: var(--accent);
+}
+
+.rhythm-axis-labels {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-faint);
+  margin: 2px 6px 14px;
+}
+
+.rhythm-suggestion {
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+  background: rgba(124, 240, 200, 0.05);
+}
+.rs-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+.rs-name {
+  font-size: 14px;
+  font-weight: 500;
+}
+.rs-when {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--accent);
+  flex: none;
+}
+.rs-reason {
+  font-size: 12px;
+  color: var(--text-dim);
+  line-height: 1.55;
+  margin-bottom: 12px;
+}
+.rs-start {
+  appearance: none;
+  width: 100%;
+  border: 1px solid var(--accent);
+  background: transparent;
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  min-height: var(--tap);
+  padding: 11px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.rs-start:hover {
+  background: var(--accent-dim);
+}
+
+.rhythm-none {
+  font-size: 12px;
+  color: var(--text-faint);
+  line-height: 1.6;
+  padding: 8px 0;
+}
+
+.rhythm-learning .rl-title {
+  font-size: 13px;
+  color: var(--text);
+  margin-bottom: 5px;
+}
+.rhythm-learning .rl-note {
+  font-size: 12px;
+  color: var(--text-dim);
+  line-height: 1.5;
+  margin-bottom: 14px;
+}
+.rl-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.rl-bar {
+  display: grid;
+  grid-template-columns: 84px 1fr 44px;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-faint);
+}
+.rl-track {
+  height: 4px;
+  background: var(--line);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.rl-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 2px;
+}
+.rl-bar b {
+  text-align: right;
+  color: var(--text-dim);
+  font-weight: 400;
+}
+.rl-why {
+  font-size: 11px;
+  color: var(--text-faint);
+  line-height: 1.6;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.rhythm-explain {
+  margin-top: 14px;
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+}
+.rhythm-explain summary {
+  font-size: 12px;
+  color: var(--text-faint);
+  cursor: pointer;
+  list-style: none;
+  min-height: var(--tap);
+  display: flex;
+  align-items: center;
+}
+.rhythm-explain summary::-webkit-details-marker {
+  display: none;
+}
+.rhythm-explain summary::before {
+  content: "› ";
+  margin-right: 4px;
+}
+.rhythm-explain[open] summary::before {
+  content: "⌄ ";
+}
+.re-body {
+  font-size: 12px;
+  color: var(--text-dim);
+  line-height: 1.6;
+}
+.re-body p {
+  margin: 0 0 10px;
+}
+.re-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--mono);
+  font-size: 11px;
+  margin-bottom: 10px;
+}
+.re-table th {
+  text-align: left;
+  color: var(--text-faint);
+  font-weight: 400;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--line);
+}
+.re-table td {
+  padding: 4px 0;
+  color: var(--text-faint);
+}
+.re-table tr.re-win td {
+  color: var(--accent);
+}
+.re-caveat {
+  color: var(--text-faint);
+  font-size: 11px;
+}
+
+/* ========================================================= dashboard */
+
+.dash-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px solid var(--line);
+}
+.dash-row:first-child {
+  border-top: none;
+}
+.dash-mode {
+  font-size: 13px;
+  color: var(--text);
+}
+.dash-n {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-faint);
+  display: block;
+  margin-top: 3px;
+  line-height: 1.5;
+}
+.dash-val {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--text-dim);
+  white-space: nowrap;
+  flex: none;
+}
+.dash-caveat {
+  font-size: 12px;
+  color: var(--text-faint);
+  line-height: 1.6;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+/* =================================================== session history */
+
+.session-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.session-empty {
+  font-size: 12px;
+  color: var(--text-faint);
+  line-height: 1.6;
+}
+
+.session-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px solid var(--line);
+}
+.session-row:first-child {
+  border-top: none;
+}
+
+.session-mode {
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 500;
+}
+.session-meta {
+  color: var(--text-faint);
+  font-family: var(--mono);
+  font-size: 10px;
+  display: block;
+  margin-top: 3px;
+}
+
+/*
+  Deliberately one neutral style regardless of direction: a lower end-of-
+  session heart rate is not intrinsically "good" for every mode (Energy
+  sessions have no such expectation), so the UI must not imply a verdict via
+  colour. The reading itself (with its down/up glyph) carries the
+  information; see docs/07-claims.md.
+*/
+.delta-pill {
+  font-family: var(--mono);
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+  background: var(--line);
+  color: var(--text-dim);
+  flex: none;
+}
+.delta-pill.unreliable {
+  color: var(--text-faint);
+  font-style: italic;
+}
+
+/* ======================================================== techniques */
+
+.technique-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.technique-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  align-items: start;
+}
+.technique-label {
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.45;
+}
+.technique-warn {
+  font-size: 12px;
+  color: var(--text-faint);
+  line-height: 1.5;
+  margin-top: 4px;
+}
+.technique-exp {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  border: 1px solid var(--line-strong);
+  border-radius: 4px;
+  padding: 1px 5px;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+/* ======================================================= footer note */
+
+.footer-note {
+  font-size: 12px;
+  color: var(--text-faint);
+  line-height: 1.65;
+  padding: 16px var(--pad) calc(20px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--line);
+}
+.footer-note b {
+  color: var(--text-dim);
+}
+
+/* =============================================== focus visibility */
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ================================== tablet portrait and up (>=640px) */
+
+@media (min-width: 640px) {
+  :root {
+    --pad: 20px;
+    --stage-h: 44vh;
+  }
+
+  .topbar {
+    justify-content: space-between;
+    gap: 20px;
+    padding-top: calc(14px + env(safe-area-inset-top));
+    padding-bottom: 14px;
+  }
+
+  .wordmark {
+    font-size: 13px;
+  }
+
+  /* Enough room to sit at natural width rather than filling the bar. */
+  .modes {
+    flex: 0 1 auto;
+  }
+
+  /* Two-up panels: an 11-inch tablet in portrait is ~834px wide, which is
+     enough for two columns and roughly halves the scroll depth. */
+  .tab-panel {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  /* Panels whose content is wide or long read better across the full width. */
+  .tab-panel .panel.span-2 {
+    grid-column: 1 / -1;
+  }
+
+  .stage-content {
+    padding: 16px var(--pad);
+  }
+
+  .hr-value {
+    font-size: 42px;
+  }
+}
+
+/* ========================= tablet landscape / desktop (>=1024px) */
+
+@media (min-width: 1024px) {
+  :root {
+    --stage-h: auto;
+  }
+
+  .main {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 400px;
+    flex-direction: row;
+  }
+
+  .stage {
+    height: auto;
+    min-height: 0;
+    border-bottom: none;
+  }
+
+  .side {
+    border-left: 1px solid var(--line);
+    background: var(--bg);
+  }
+
+  .tabs {
+    background: var(--bg);
+  }
+
+  /* Back to a single column: the sidebar is 400px, so two-up would be
+     cramped here even though it was right at tablet-portrait width. */
+  .tab-panel {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .stage-content {
+    padding: 24px;
+  }
+}
+
+@media (min-width: 1440px) {
+  .main {
+    grid-template-columns: minmax(0, 1fr) 440px;
+  }
+}
+
+/* ====================================== short landscape (phones) */
+
+/*
+  A phone in landscape is wide and very short. Stacking the stage above the
+  panels leaves almost nothing below the tab bar, so flip to the side-by-side
+  layout early: vertical space is the scarce resource here and horizontal
+  space is not. The sidebar is narrower than the tablet one to keep the stage
+  usable.
+*/
+@media (orientation: landscape) and (max-height: 600px) and (min-width: 640px) and (max-width: 1023px) {
+  .main {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 300px;
+    flex-direction: row;
+  }
+
+  .stage {
+    height: auto;
+    min-height: 0;
+    border-bottom: none;
+  }
+
+  .side {
+    border-left: 1px solid var(--line);
+  }
+
+  .tab-panel {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* Claw back header height so the stage keeps a usable aspect ratio. */
+  .topbar {
+    padding-top: calc(8px + env(safe-area-inset-top));
+    padding-bottom: 8px;
+  }
+
+  .stage-content {
+    padding: 10px 14px;
+  }
+
+  .phase-banner {
+    display: none; /* progress is still audible and shown in the Plan tab */
+  }
+
+  .begin-btn {
+    padding: 10px 24px;
+    font-size: 13px;
+  }
+
+  .hint {
+    display: none; /* the button label already says what it does */
+  }
+}
+
+/*
+  Very short landscape on a narrow phone (<640px wide) cannot support two
+  columns either. Keep the stack but shrink the stage hard so the tab bar and
+  some panel content remain visible.
+*/
+@media (orientation: landscape) and (max-height: 480px) and (max-width: 639px) {
+  :root {
+    --stage-h: 46vh;
+  }
+  .stage {
+    min-height: 150px;
+  }
+  .phase-banner,
+  .hint {
+    display: none;
+  }
+}
+
+/* ============================================== reduced motion */
+
+/*
+  Pairs with the JS-side motion scaling in visual.ts. Anything that moves
+  purely for feel is stilled; state-carrying transitions (progress fills)
+  keep a short duration so changes remain perceptible rather than jumping.
+*/
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .breath-ring-inner {
+    transition: none;
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "name": "@soundfx/web",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b --pretty false && vite build",
+    "preview": "vite preview",
+    "test": "node --test test/*.test.js"
+  },
+  "dependencies": {
+    "@soundfx/engine": "*",
+    "@soundfx/biosignal": "*",
+    "@soundfx/protocol": "*"
+  }
+}

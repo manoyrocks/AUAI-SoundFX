@@ -1,0 +1,8 @@
+node_modules/
+dist/
+lib/
+.vite/
+*.tsbuildinfo
+apps/web/public/worklets/
+ml/out/
+__pycache__/

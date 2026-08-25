@@ -1,0 +1,9 @@
+{
+  "files": [],
+  "references": [
+    { "path": "./packages/engine" },
+    { "path": "./packages/biosignal" },
+    { "path": "./packages/protocol" },
+    { "path": "./apps/web" }
+  ]
+}

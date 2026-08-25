@@ -1,0 +1,11 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "./lib",
+    "rootDir": "./src",
+    "lib": ["ES2021", "DOM", "DOM.Iterable"],
+    "noEmit": false
+  },
+  "include": ["src/**/*.ts"],
+  "references": [{ "path": "../../packages/engine" }, { "path": "../../packages/biosignal" }, { "path": "../../packages/protocol" }]
+}
