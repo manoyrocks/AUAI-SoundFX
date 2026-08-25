@@ -7,10 +7,11 @@
  * consumes only this. No component ever names a stem, a sample, a preset or a
  * "sound pack", because none exist: the vector *is* the composition.
  *
- * This is the structural break from stem-recombination engines. There, the
- * adaptation layer selects and gates pre-authored material. Here, the
- * adaptation layer moves a point through a continuous latent space and the
- * waveform is synthesised from scratch at that point, sample by sample.
+ * The adaptation layer moves a point through a continuous latent space, and
+ * the waveform is synthesised from scratch at that point, sample by sample.
+ * Because the space is continuous in every dimension, the controller can
+ * move the sound by arbitrarily small amounts — there is no smallest
+ * addressable unit of change.
  */
 export interface ControlVector {
   /** Affective pleasantness. -1 sombre/minor-leaning, +1 bright/consonant. */

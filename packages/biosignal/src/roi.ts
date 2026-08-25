@@ -10,7 +10,7 @@
  * onto a hand, neck, or a skin-toned object, and it degrades on low-contrast
  * webcams. M1 ships it because it has zero model-download cost and is good
  * enough to demonstrate closed-loop control; the roadmap item to replace it
- * with a WebGPU face landmarker is tracked in docs/03-a2-generative-model.md
+ * with a WebGPU face landmarker is tracked in docs/03-synthesis-model.md
  * under "M2 biosignal hardening". The confidence score this module reports is
  * deliberately conservative so the UI never overstates certainty.
  */

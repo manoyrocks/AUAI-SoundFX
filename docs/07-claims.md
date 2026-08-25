@@ -1,8 +1,8 @@
-# D2 — Claims substantiation and copy audit
+# Claims substantiation and copy audit
 
-Part 6: "never claim what the data doesn't show." Part 2 pillar 6: "no
-pseudo-scientific claims: no '440 Hz natural order' mysticism; every
-mechanism cited to literature or flagged as experimental."
+Two standing rules: never claim what the data doesn't show, and make no
+pseudo-scientific claims — every mechanism is either cited to literature or
+flagged as experimental.
 
 This document audits every user-facing claim in the shipped UI against what
 the code and tests actually substantiate.
@@ -20,7 +20,7 @@ hedged.
 | String (source) | Verdict | Basis |
 |---|---|---|
 | "Runs entirely on this device. No audio, video frame, or biometric reading is ever uploaded — check the network tab." (`main.ts` footer) | **OK** | Mechanically true; no network call exists in the biosignal/outcome path. The "check the network tab" invitation is deliberate — the claim is falsifiable by the user in ten seconds. See [05-privacy.md](05-privacy.md). |
-| "Sound is synthesised sample-by-sample from a neural field decoder; nothing here is a recording." (`main.ts` footer) | **OK, with a caveat carried in docs** | True: there are no audio assets in the repo, and every sample comes from the modal/spectral/granular/drone synthesis chain parameterised by `NeuralFieldDecoder`. The caveat — that the decoder currently runs a hand-derived analytic prior rather than trained weights — is documented in [03-a2-generative-model.md](03-a2-generative-model.md). The UI string does not claim the model is *trained*, and the live telemetry panel shows `decoder: analytic-prior` verbatim, so the actual state is visible in the product itself, not buried. |
+| "Sound is synthesised sample-by-sample from a neural field decoder; nothing here is a recording." (`main.ts` footer) | **OK, with a caveat carried in docs** | True: there are no audio assets in the repo, and every sample comes from the modal/spectral/granular/drone synthesis chain parameterised by `NeuralFieldDecoder`. The caveat — that the decoder currently runs a hand-derived analytic prior rather than trained weights — is documented in [03-synthesis-model.md](03-synthesis-model.md). The UI string does not claim the model is *trained*, and the live telemetry panel shows `decoder: analytic-prior` verbatim, so the actual state is visible in the product itself, not buried. |
 | "Camera-derived heart rate and HRV are estimates from a consumer webcam, not a medical measurement." (`main.ts` footer) | **OK — required hedge** | Directly satisfies the "not a medical device" rule at the point of measurement, not just in a buried disclaimer. |
 | "Heart rate is elevated and beat-to-beat variability is down from your baseline — easing tempo and arousal to help you settle." (`controller.ts`) | **OK** | Every element is literally true of what just happened: the reading *is* above the tracked personal baseline, HRV *is* below it, and the controller *did* reduce tempo/arousal. "To help you settle" states intent, not a measured outcome — acceptable because it describes what the system is attempting, and the session-history panel separately reports whether anything actually changed. |
 | "Tracking close to your resting baseline — holding steady." (`controller.ts`) | **OK** | Descriptive of the controller's actual state. |
@@ -71,7 +71,7 @@ build does not, because nothing here substantiates them:
   the build does make an acoustic claim — that just-intonation intervals
   beat less than equal-tempered ones at long sustain — it is a beat-
   frequency fact about small-integer ratios, cited in
-  [03-a2-generative-model.md](03-a2-generative-model.md), not a metaphysical
+  [03-synthesis-model.md](03-synthesis-model.md), not a metaphysical
   one.
 - **No claim of clinical-grade HRV.** `hrv.ts` returns an explicit
   `"low" | "medium" | "unusable"` quality flag, and the UI is required to

@@ -1,6 +1,6 @@
 # Safety design and guardrails
 
-Part 6 lists safety requirements. This document records which are enforced
+This document records which safety requirements are enforced
 in code (and tested), which are policy-only, and which are **not met** —
 the last category matters most and is stated first.
 
@@ -82,7 +82,7 @@ intervention's efficacy this session, not a diagnosis of the person.
 
 The response is correspondingly modest and is tested for exactly that:
 - Fires **at most once per session** — repeating would turn a gentle offer
-  into nagging, the dark-pattern shape Part 6 rules out.
+  into nagging, the dark-pattern shape the product rules out.
 - Tells the controller to **stop pushing** (`shouldDisengage`) rather than
   escalate its intervention.
 - Copy points to `findahelpline.com` (free, confidential, country-aware),
@@ -155,7 +155,7 @@ than by an explicit guard.
 ## Recommended next safety work (priority order)
 
 1. A parameterised synthetic-physiology population (see
-   [04-a3-biosignals-and-control.md](04-a3-biosignals-and-control.md)) run
+   [04-biosignals-and-control.md](04-biosignals-and-control.md)) run
    against the controller to search for safety-invariant violations
    automatically, rather than relying on hand-picked adversarial cases.
    This is the prerequisite for any learned/RL controller.

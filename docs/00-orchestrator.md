@@ -1,12 +1,11 @@
-# PM/Orchestrator status — SoundFX
+# Build status ledger
 
 Maintained by: PM/Orchestrator agent. Last updated: 2026-08-25.
 
-This document tracks the spec (root brief, Parts 0–6) against what has
-actually been built and verified in this repository. Per the mandate: work
-that merely matches Endel parity is rejected, and claims here are limited to
-what has been run and observed — see [07-claims.md](07-claims.md) for the
-house rule this document itself follows.
+This document tracks the product requirements against what has actually
+been built and verified in this repository. Work
+Claims here are limited to what has been run and observed — see
+[07-claims.md](07-claims.md) for the house rule this document follows.
 
 ## Milestone status
 
@@ -23,7 +22,7 @@ house rule this document itself follows.
   `AudioWorkletNode`, verified via a real user-gesture session in-browser:
   non-zero, in-range audio output; 4–8 modal voices active; telemetry
   streaming main-thread ↔ audio-thread at 5 Hz. See
-  [01-a1-audio-core.md](01-a1-audio-core.md).
+  [01-audio-engine.md](01-audio-engine.md).
 - Live control-vector morphing: the on-screen vector readout and generative
   visual (`apps/web/src/visual.ts`) are driven by the *same* rate-limited
   slew law (`slewToward`, `packages/engine/src/control.ts`) as the audio
@@ -34,7 +33,7 @@ house rule this document itself follows.
   known-ground-truth pulse traces (`packages/biosignal/test/rppg.test.js`,
   4/4 passing, recovers 50–140 bpm within 3–4 bpm). Camera-denial path
   verified live (graceful banner, no crash). See
-  [04-a3-biosignals-and-control.md](04-a3-biosignals-and-control.md).
+  [04-biosignals-and-control.md](04-biosignals-and-control.md).
 - 32/32 automated tests passing across the workspace (`npm test`), including
   a repetition-guard test and the sleep-mode safety-invariant test (below).
 
@@ -44,7 +43,7 @@ house rule this document itself follows.
   HRV against a per-user online baseline, conservative/saturating response,
   hard safety clamp. 6/6 tests passing, including an adversarial test that
   feeds a 170 bpm reading into sleep mode and asserts arousal/tempo/tension
-  cannot exceed the sleep anchor — this is Part 6's "sleep sessions never
+  cannot exceed the sleep anchor — this is the "sleep sessions never
   spike arousal" guardrail, enforced in code and checked by CI, not only by
   design intent.
 - Session outcomes (`packages/protocol/src/outcomes.ts` +
@@ -61,13 +60,13 @@ house rule this document itself follows.
   multi-week, multi-person effort (native audio backends, JNI/Swift
   bindings, platform build pipelines) that cannot be responsibly claimed
   "running" without actually running it on a device. See
-  [02-a4-platform.md](02-a4-platform.md) for the concrete path.
+  [02-platform.md](02-platform.md) for the concrete path.
 - **Not done**: the learned safe-RL controller. What ships instead is a
   hand-specified, bounded, saturating proportional controller — explicitly
   documented in its own file header as the M1/M2 placeholder for the
   eventual learned policy, sharing the same `computeAdjustment` signature so
   the swap is contained. Building a real RL policy needs the synthetic-
-  physiology simulation environment (A3 deliverable, not yet built) to
+  physiology simulation environment (not yet built) to
   validate safety *before* any human hears it — sequencing that correctly
   matters more than shipping something premature.
 
@@ -121,7 +120,7 @@ house rule this document itself follows.
   the start. 23 tests, measuring real acoustic properties (modulation depth,
   spectrum efficiency, cadence peak) rather than parameter round-trips.
 - **Not started**: agentic copilot, onboarding flow, light orchestration
-  (Hue/Matter — no hardware available to verify against).
+  (smart-home lighting protocols — no hardware available to verify against).
 
 ### M4 evidence (partial)
 
@@ -134,7 +133,7 @@ house rule this document itself follows.
 - **Accessibility**: `prefers-reduced-motion`, `aria-live` on status
   regions, `aria-pressed` synced on all toggles, `aria-hidden` on
   decorative canvas/video, labelled controls. Still missing: the
-  haptic-only no-audio mode named in Part 3, and a full screen-reader
+  haptic-only no-audio mode, and a full screen-reader
   walkthrough.
 - **Not started**: battery/latency budget measurement on real devices,
   N-of-1 blinded experiment engine, beta.
@@ -179,7 +178,7 @@ like every pillar is done. Here is the explicit ledger.
 - The M1/M2 controller (see above) is the bounded placeholder for the
   eventual safe-RL policy.
 - The spectral/generative visual (`apps/web/src/visual.ts`) is 2D canvas,
-  not the WebGPU shader layer the spec describes for M3.
+  not the WebGPU shader layer targeted for M3.
 
 **Not built, scoped out with reasons:**
 - Mobile native shells (iOS/Android) — needs real device build pipelines.
@@ -192,30 +191,30 @@ like every pillar is done. Here is the explicit ledger.
   an LLM copilot with nothing real to call is a chatbot skin over a mode
   picker. It now has real tools to call — forecast windows, schedule and
   reshape protocols, explain the fitted model.
-- Light orchestration (Hue/Matter) — no hardware available to test against
-  in this environment; shipping unverified smart-home integration code is
-  worse than not shipping it.
+- Light orchestration (smart-home lighting protocols) — no hardware
+  available to test against in this environment; shipping unverified
+  integration code is worse than not shipping it.
 - N-of-1 blinded experimentation engine — this is a real statistics
   feature (needs a defensible blinding/withholding design and a minimum-N
   policy before it can honestly report an effect size). Building it before
   the session-outcomes substrate (done, this session) existed would have
   been building on nothing.
 - Artist style-pack marketplace, SDK/API surface — explicitly "design for,
-  don't build first" per Part 2.
+  don't build first".
 
-## Quality-bar scorecard (Part 6)
+## Quality-bar scorecard
 
 | Bar | Status |
 |---|---|
-| Sonic: more pleasant / less repetitive than Endel, blind-tested | **Not measured** — no blind listener panel has been run. The repetition half is partially substantiated structurally (irrational-ratio latent oscillators, Poisson grain arrivals, randomised-phase spectral resynthesis have no exact period by construction) and by a regression test asserting no near-duplicate 1-second blocks across a 24 s render. That is evidence against gross bugs, not a MOS/preference study. |
-| Zero audible loops in 8h sleep sessions | **Structurally argued, not empirically run at 8h scale.** The synthesis has no periodic component by design (see [03-a2-generative-model.md](03-a2-generative-model.md)); an actual 8-hour blind listen has not been done. |
+| Sonic: pleasant and non-repetitive across all modes, blind-tested | **Not measured** — no blind listener panel has been run. The repetition half is partially substantiated structurally (irrational-ratio latent oscillators, Poisson grain arrivals, randomised-phase spectral resynthesis have no exact period by construction) and by a regression test asserting no near-duplicate 1-second blocks across a 24 s render. That is evidence against gross bugs, not a MOS/preference study. |
+| Zero audible loops in 8h sleep sessions | **Structurally argued, not empirically run at 8h scale.** The synthesis has no periodic component by design (see [03-synthesis-model.md](03-synthesis-model.md)); an actual 8-hour blind listen has not been done. |
 | Efficacy: honest per-user deltas, never overclaimed | **Mechanism built** (outcomes.ts honesty gate), **not yet validated against a real user population.** |
 | Safety: entrainment/epilepsy/arrhythmia screening | **Built and tested.** Default-deny gating (`screening.ts`), fails closed on non-boolean consent, plain-language contraindication copy surfaced next to each toggle. The gate exists *before* any gated technique is implemented — the correct order. See [06-safety.md](06-safety.md). |
 | Safety: distress escalation copy | **Built and tested.** Deliberately narrow: detects sustained non-response to a calming session, not a mental-health state. Fires at most once, disengages the loop rather than escalating, points to findahelpline.com, and is test-asserted to contain no pathologising language. |
 | Safety: sleep never spikes arousal | **Enforced in code, tested adversarially.** See M2 evidence above. |
 | Safety: not a medical device, no diagnostic claims | Copy audited in the current UI (`apps/web/src/main.ts` footer note, HR-status strings) — explicitly hedges camera HR/HRV as estimates, not measurements. No diagnostic language present. |
 | Privacy: raw biometrics never leave device | **True by construction and grep-verified** — `packages/biosignal` and the session/outcome path contain no `fetch`/`XHR`/`WebSocket` calls. See [05-privacy.md](05-privacy.md). |
-| IP: legal review against Endel's patent family | **Not done** — needs an actual attorney, not an engineering self-assessment. Flagged as a real M3 blocker, not skipped silently. Engineering-level differentiation is documented in [03-a2-generative-model.md](03-a2-generative-model.md): rule-based stem recombination vs. parameterised neural-field synthesis is a different mechanism, not a re-skin, but that is not a substitute for legal sign-off. |
+| IP: independent review of the synthesis method | **Not done** — needs an attorney, not an engineering self-assessment. Flagged as a real M3 blocker, not skipped silently. The method itself is documented in full in [03-synthesis-model.md](03-synthesis-model.md), which is what such a review would need as input, but documentation is not a substitute for legal sign-off. |
 | No streaks, no dark patterns | Held: no engagement metrics, no streaks, no notifications-for-retention exist anywhere in the codebase. Session end is a plain fade, not a guilt prompt. |
 
 ## Recommendations (priority order)
@@ -224,13 +223,13 @@ like every pillar is done. Here is the explicit ledger.
    Every sonic quality-bar claim is currently structural argument, not
    listener data. This is cheap relative to everything else on this list and
    directly de-risks the sonic bar.
-2. **Build the A3 synthetic-physiology simulator before touching RL.** It's
-   the prerequisite the spec itself names for safe controller development,
-   and it's also what would let the sleep-safety invariant be tested against
-   thousands of adversarial synthetic traces instead of the handful of
-   hand-picked cases in the current test suite.
-3. **Get the patent legal review scheduled now, not at M3.** It gates go/no-
-   go on the entire generation approach; finding a problem late is far more
+2. **Build the synthetic-physiology simulator before touching RL.** It is
+   the prerequisite for safe controller development, and it is also what
+   would let the sleep-safety invariant be tested against thousands of
+   adversarial synthetic traces instead of the handful of hand-picked cases
+   in the current test suite.
+3. **Schedule the independent IP review now, not at M3.** It gates go/no-go
+   on the entire generation approach; finding a problem late is far more
    expensive than finding it now, while the architecture is still cheap to
    redirect.
 4. **Validate the Rhythm Model's arousal proxy against real users.** The
@@ -257,10 +256,10 @@ like every pillar is done. Here is the explicit ledger.
 ## Repository map
 
 ```
-packages/engine/     — A1 + A2: DSP core, synthesis voices, NFD, AudioWorklet host
-packages/biosignal/   — A3 (sensing half): camera rPPG pipeline
-packages/protocol/    — A3 (control half): baseline, controller, outcomes
-apps/web/             — A4 (web) + D1/D2 surfaces: PWA, UI, breath pacer, session store
+packages/engine/      — DSP core, synthesis voices, NFD, AudioWorklet host
+packages/biosignal/   — camera rPPG sensing pipeline
+packages/protocol/    — baseline, controller, outcomes, rhythm model, protocols
+apps/web/             — PWA: UI, generative visual, breath pacer, local stores
 docs/                 — this directory
 ```
 

@@ -11,11 +11,10 @@ import { ANCHORS, lerpControl, type AnchorName, type ControlVector } from "@soun
  * actually move. A protocol can therefore never violate a safety bound by
  * scheduling an aggressive ramp — it can only ask, and the engine paces.
  *
- * This is the structural difference from a "Scenario" in a stem-based
- * engine, where a phase change means swapping which pre-authored material
- * is playing and the transition is a crossfade between two fixed things.
- * Here the transition IS the composition: every intermediate point is a
- * valid, fully-synthesised soundscape that has never existed before.
+ * The transition IS the composition: every intermediate point between two
+ * phase waypoints is itself a valid, fully-synthesised soundscape that has
+ * never existed before. There is no crossfade, because there are no two
+ * fixed things to fade between.
  */
 
 export interface ProtocolPhase {

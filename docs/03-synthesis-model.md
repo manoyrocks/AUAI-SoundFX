@@ -1,16 +1,13 @@
-# A2 — ML Engineer, Generative Audio
+# Synthesis model
 
 Component: `packages/engine/src/model/nfd.ts`, `packages/engine/src/latent.ts`,
 `packages/engine/src/harmony.ts`.
 
 ## Read this first: what "neural" means in this build
 
-The spec's engineering non-negotiable is to engineer around Endel's patent
-family (notably the stem-recombination pipeline) with "fundamentally
-different generation methods (neural synthesis rather than rule-based
-layering of pre-designed stems)". This build satisfies that at the
-**architecture** level and is explicit about what it does not yet satisfy at
-the **trained-weights** level:
+The word "neural" is doing precise and limited work here. This build is
+neural at the **architecture** level, and is explicit about what it does not
+yet satisfy at the **trained-weights** level:
 
 - **Architecturally neural and stem-free, verified:** every synthesis
   parameter (16 partial gains, 8 inharmonicity coefficients, 14 spectral-bed
@@ -26,16 +23,15 @@ the **trained-weights** level:
   weight file has been produced. Every session in this build runs
   `analyticPrior()`, a hand-derived closed-form function occupying the exact
   same input/output contract. **Say "neural-architecture decoder running an
-  untrained analytic prior", not "trained neural model".** The distinction
-  is load-bearing for the patent-differentiation argument (the *mechanism*
-  is genuinely different — a continuous function approximator conditioned on
-  a control vector, not a recombination table — independent of whether its
-  weights are hand-derived or learned) but must not be blurred into "we
-  shipped a trained model."
+  untrained analytic prior", not "trained neural model".** The architecture
+  claim is real and independent of the weights — the mechanism is a
+  continuous function approximator conditioned on a control vector, whether
+  its weights are hand-derived or learned — but it must never be blurred
+  into "we shipped a trained model."
 
 ## Why an MLP decoder + latent trajectory, not a direct diffusion/RVQ model
 
-The spec's aspiration (Part 2, pillar 1) is a distilled latent-diffusion or
+The design target is a distilled latent-diffusion or
 RVQ streaming model. That class of model is real, but it does not fit inside
 an `AudioWorkletProcessor`: the worklet thread has a ~2.7 ms hard deadline
 per 128-frame quantum and no GPU access, while a diffusion/RVQ decoder step
@@ -75,23 +71,23 @@ fixed cycle length. `packages/engine/test/clfs.test.js`'s repetition test is
 the empirical spot-check of this argument at a scale a test suite can
 actually run (24 s); it is not itself a proof for 8-hour sessions.
 
-## Harmonic engine: engineering around, not just distinguishing from
+## Harmonic engine: a continuous region, not a scale
 
-Endel's stated approach (Part 1): pentatonic scales, 12-TET, A440, chosen to
-minimize structural complexity. `harmony.ts::HarmonicWalker` instead performs
-a Metropolis random walk over a **just-intonation lattice** (points
-`3^b * 5^c * 7^d`, reduced to an octave), where the *admissible lattice
-radius* (Tenney harmonic distance budget) is a continuous function of
-`ControlVector.tension`. Two consequences:
+`harmony.ts::HarmonicWalker` performs a Metropolis random walk over a
+**just-intonation lattice** (points `3^b * 5^c * 7^d`, reduced to an
+octave), where the *admissible lattice radius* (Tenney harmonic distance
+budget) is a continuous function of `ControlVector.tension`. Two
+consequences:
 
-- Sustained tones actually lock (small-integer ratios), which is the
-  acoustic reason a just-intonation drone can sound smoother than an
-  equal-tempered one at long sustain — not an aesthetic preference, a beat-
-  frequency fact.
-- "Simplicity" is a dial (tension), not a scale choice — tension 0 admits
-  only octaves/fifths, tension 1 opens 7-limit territory. A fixed-scale
-  engine cannot make harmonic complexity continuously controllable this way
-  because the scale itself is the discretization.
+- Sustained tones actually lock, because intervals are exact small-integer
+  ratios. That is the acoustic reason a just-intonation drone sounds
+  smoother than an equal-tempered one at long sustain — a beat-frequency
+  fact, not an aesthetic preference.
+- "Simplicity" becomes a dial rather than a fixed choice: tension 0 admits
+  only octaves and fifths, tension 1 opens 7-limit territory. Harmonic
+  complexity is therefore continuously steerable by the controller, which is
+  impossible when the note set is a discrete scale — the scale itself is the
+  discretisation.
 
 Root frequency drifts slowly and continuously (±35 cents over ~7 minutes,
 `driftRoot()`) rather than sitting at a fixed reference pitch — deliberately
@@ -100,7 +96,7 @@ avoiding any "440 Hz natural order" framing; see
 
 ## Style packs / personal styles: the actual mechanism
 
-Per Part 2 pillar 1 ("learn my taste from these 5 tracks"): the architecture
+For user-taught personal styles ("learn my taste from these 5 tracks"): the architecture
 supports this as a **latent offset**. `LatentTrajectory.setStyle(embedding,
 weight)` blends a 16-D embedding into `mu(control)` computation. An artist
 pack and a personal style are the same mechanism — a 16-D vector and a
@@ -112,7 +108,7 @@ started.
 
 ## Recommended eval harness (not built this session)
 
-Part 4 asks for model cards and an eval harness (audio quality MOS, control
+The deliverable list calls for model cards and an eval harness (audio quality MOS, control
 fidelity, repetition metrics). What exists today:
 
 - Repetition: the cross-correlation regression test above — a floor, not
@@ -124,9 +120,9 @@ fidelity, repetition metrics). What exists today:
   `ClfsCore` is already Node-runnable headless, so this harness is a
   straightforward addition to `packages/engine/test/` or a new `eval/`
   directory, not a new architecture.
-- MOS (audio quality/pleasantness vs. Endel): **not measured** — needs
-  actual human listeners, which no amount of engineering substitutes for.
-  This is the top recommendation in
+- Mean opinion score for audio quality and pleasantness: **not measured** —
+  needs actual human listeners, which no amount of engineering substitutes
+  for. This is the top recommendation in
   [00-orchestrator.md](00-orchestrator.md).
 
 ## Explicit non-goals of this session

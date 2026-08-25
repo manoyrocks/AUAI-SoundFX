@@ -3,7 +3,7 @@
 Component: `packages/protocol/src/rhythm/*`, surfaced in
 `apps/web/src/rhythmPanel.ts`.
 
-The spec (Part 2, pillar 3) asks for a continuously-learned on-device model
+The requirement is a continuously-learned on-device model
 of the user's rhythms that predicts energy/focus windows 24–48h ahead and
 powers proactive suggestions. This is the built subset, and an honest
 account of the parts that are not built.
@@ -55,8 +55,8 @@ candidates whose extra parameters do not earn their keep (0.0137–0.0138).
 
 ## The ultradian question — why a component exists to be rejected
 
-Endel maps a "~110-minute ultradian energy cycle" onto clock time. Two
-things are worth stating plainly:
+It is common to model a "~90-110 minute ultradian energy cycle" against
+clock time. Two things are worth stating plainly:
 
 1. Evidence for a stable *daytime* ultradian rhythm in alertness is
    substantially weaker than for the circadian rhythm.
@@ -129,7 +129,7 @@ keys are retained rather than per-observation timestamps. Persistence is
 
 ## Not built
 
-- **Sleep debt, caffeine, and calendar context**, all named in the spec.
+- **Sleep debt, caffeine, and calendar context**, all planned.
   Each needs a data source that does not exist here (wearable sleep staging,
   user logging, calendar permission). The observation interface takes an
   opaque `arousalZ`, so adding these later means enriching the basis, not

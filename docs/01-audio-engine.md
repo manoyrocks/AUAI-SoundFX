@@ -1,18 +1,20 @@
-# A1 — Systems/Audio Engineer: real-time audio core
+# Real-time audio core
 
 Component: `packages/engine/src/dsp/*`, `packages/engine/src/voices/*`,
 `packages/engine/src/clfs.ts`, `packages/engine/src/worklet/processor.ts`.
 
-## What this replaces
-
-Endel's engine (Part 1) is a real-time *recombination* system: human sound
-designers author stems/elements, the engine selects, gates, and modulates
-them. The palette is fixed at authoring time; what changes at runtime is
-which pre-made pieces are audible and how they're mixed.
+## The central property: no audio assets exist
 
 This component contains **no recorded or pre-authored audio material at
-all** — no stems, no samples, no impulse responses. Every voice renders raw
-waveform from a mathematical model, evaluated fresh every session:
+all** — no stems, no samples, no impulse responses. The repository ships
+zero bytes of audio.
+
+That is not a size optimisation, it is what makes the palette continuous.
+Any parameter can move by any amount, and every intermediate state is a
+real soundscape rather than a transition between two fixed ones — there is
+no smallest addressable unit of change.
+
+Every voice renders raw waveform from a model, evaluated fresh each session:
 
 | Voice | File | Method |
 |---|---|---|
@@ -22,14 +24,12 @@ waveform from a mathematical model, evaluated fresh every session:
 | Sustaining harmonic field | `voices/drone.ts` | Detuned oscillator pairs per partial, irrational detune spread so no two partials ever phase-lock into an audible beat period. |
 | Space | `dsp/fdn.ts` | 8-line Householder feedback delay network — algorithmic, not convolution, so room size/damping are continuous controls rather than a fixed IR swap. |
 
-Why this structural difference matters, concretely: a recombination engine's
-palette is bounded by however much material was authored. This engine's
-palette is bounded only by the 10-D control vector's continuous range — the
-same reason it can satisfy "zero audible loops in 8 hours" *by construction*
-(see the repetition argument in
-[03-a2-generative-model.md](03-a2-generative-model.md)) where a
-recombination engine fundamentally cannot without either an enormous asset
-library or an eventual audible cycle.
+The practical consequence: the palette is bounded only by the 10-D control
+vector's continuous range, not by how much material anyone had time to
+create. It is also why "zero audible loops in 8 hours" holds *by
+construction* rather than by making a cycle long enough to be unlikely to
+notice — no layer in the chain has a period at all. See the repetition
+argument in [03-synthesis-model.md](03-synthesis-model.md).
 
 ## Real-time isolation
 
@@ -72,7 +72,7 @@ in a real `AudioWorkletNode` session:
 
 ## Latency budget
 
-Spec target: <50 ms control-to-sound. Actual path: `ClfsHost.setTarget()`
+Design target: <50 ms control-to-sound. Actual path: `ClfsHost.setTarget()`
 → `postMessage` (sub-millisecond) → `ClfsCore.setTarget()` → rate-limited
 slew toward the new target over the *next* control block(s). The
 **engine's own safety design deliberately does not jump instantly** — see
@@ -103,7 +103,7 @@ Cold-start: `ClfsHost.start()` does `addModule` → construct node → `snapTo`
 <2 s target (worklet bundle is 47.4 KB, loads near-instantly on localhost;
 production CDN latency is untested).
 
-## What A1 has not built
+## What has not been built
 
 - No native (Rust core / Oboe / AVAudioEngine) implementation — this is a
   TypeScript/WebAudio implementation only. The DSP algorithms

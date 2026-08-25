@@ -3,11 +3,13 @@ import type { StateVector } from "./state.js";
 /**
  * Confidence-weighted exponential mean/variance tracker for one scalar signal.
  *
- * Endel's biofeedback compares heart rate to a fixed, generic threshold
- * ("prolonged elevation"). SoundFX compares against *this specific user's* own
- * recent distribution for *every* fused signal, learned online, so a naturally
- * higher resting HR doesn't read as permanent stress and a genuine spike is
- * detected faster and with fewer false positives.
+ * Every fused signal is compared against *this specific user's* own recent
+ * distribution, learned online, rather than against a fixed population
+ * threshold. Resting heart rate varies enormously between individuals, so a
+ * generic "elevated" cutoff mislabels a naturally higher resting HR as
+ * permanent stress while missing a real spike in someone who runs low.
+ * Tracking the personal distribution detects genuine change faster and with
+ * far fewer false positives.
  *
  * Deliberately a simple, auditable Welford-style update for M1, not a learned
  * model — the full Personal Rhythm Foundation Model (M3) subsumes this with a
@@ -56,8 +58,9 @@ export class ScalarBaseline {
 
 /**
  * Fused physiological baseline: resting heart rate and resting HRV, tracked
- * together so the controller can read their *agreement* (see controller.ts) —
- * the multi-signal fusion Endel's single-signal (HR-only) design cannot do.
+ * together so the controller can read their *agreement* (see controller.ts).
+ * Agreement between two independent signals is what separates a real
+ * physiological shift from sensor noise in either one.
  */
 export class PhysiologyBaseline {
   readonly hr = new ScalarBaseline(68, 100, 180);

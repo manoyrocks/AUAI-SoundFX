@@ -1,13 +1,12 @@
 /*
   SoundFX — visual identity and responsive layout.
 
-  Identity notes (D1): deliberately not the soft-pastel, rounded "calm app"
-  language every competitor shares. This reads closer to a scientific
-  instrument — dark field, thin geometric type, live numeric readouts, and a
+  Identity: this reads as a scientific instrument rather than a decorative
+  interface — dark field, thin geometric type, live numeric readouts, and a
   single generative visual that IS the data rather than decoration around it.
-  Hue is never a fixed brand colour: the field's hue is a direct function of
-  the control vector, so the UI demonstrates "no two sessions look alike" the
-  same way the audio does.
+  Colour is never a fixed brand value: the field's hue is a direct function
+  of the control vector, so the interface demonstrates "no two sessions look
+  alike" the same way the audio does.
 
   Layout strategy: mobile-first, with an 11-inch tablet as the primary target.
     base            phone portrait — single column, stage over tabbed panels

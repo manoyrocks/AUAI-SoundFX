@@ -12,8 +12,8 @@
  *
  * ## On ultradian rhythms — the honest caveat
  *
- * Endel's engine maps a "~110-minute ultradian energy cycle" onto clock
- * time. There is a real phenomenon behind the name (Kleitman's Basic
+ * It is common to model a "~90-110 minute ultradian energy cycle" against
+ * clock time. There is a real phenomenon behind the name (Kleitman's Basic
  * Rest-Activity Cycle), but two things are worth stating plainly:
  *
  *  1. The evidence for a stable *daytime* ultradian rhythm in alertness is

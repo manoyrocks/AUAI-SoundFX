@@ -53,8 +53,8 @@ import { BED_BANDS, SpectralBed } from "./voices/bed.js";
  *
  * Nothing in this chain reads a sample, a stem, a loop or an impulse response.
  * The parameter set is continuous end-to-end, which is what lets the controller
- * move the sound by arbitrarily small amounts — the thing a select-and-gate
- * architecture cannot do.
+ * move the sound by arbitrarily small amounts and what makes every intermediate
+ * state a valid soundscape rather than a transition between two fixed ones.
  */
 
 export interface ClfsOptions {

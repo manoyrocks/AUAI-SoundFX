@@ -1,4 +1,4 @@
-# A3 — ML Engineer, Biosignals & Control
+# Biosignals and control
 
 Component: `packages/biosignal/src/*` (sensing), `packages/protocol/src/*`
 (fusion, control, outcomes).
@@ -37,35 +37,38 @@ without a labelled real-PPG dataset (e.g. PURE, UBFC-rPPG) — a genuine
 accuracy number against real video needs one of those, which this session
 did not have access to.
 
-**This is already a structural improvement on Endel's single-signal (HR-
-only) design** — see the fusion argument below — independent of the
-face-detection caveat.
+Independent of the face-detection caveat, the pipeline's value comes from
+fusing two signals rather than relying on one — see the fusion argument
+below.
 
 ## Personal baseline: the "personalised" half of the fusion
 
 `baseline.ts::ScalarBaseline` is a confidence-weighted, exponentially-decayed
 mean/variance tracker (Welford-style), with two instances
 (`PhysiologyBaseline`) for HR (≈3 min half-life) and HRV (≈4 min half-life).
-Endel compares heart rate to a fixed, generic "prolonged elevation"
-threshold. This compares against **this user's own recent distribution**,
-tracked online, per session — a naturally higher resting HR does not read
-as permanent stress, and a genuine spike is detectable faster because the
-baseline isn't fighting a population-average offset.
+It compares every reading against **this user's own recent distribution**,
+tracked online, per session, rather than against a fixed population
+threshold. Resting heart rate varies widely between individuals, so a
+generic "elevated" cutoff reads a naturally higher resting HR as permanent
+stress while missing a real spike in someone who runs low. Tracking the
+personal distribution also detects genuine change faster, because the
+estimate is not fighting a population-average offset.
 
 ## The M1/M2 controller: explicitly not the safe-RL policy yet
 
 `controller.ts::computeAdjustment` is a **hand-specified, bounded,
 saturating proportional controller** — not a learned policy. It is built
-this way on purpose and documented as such in the file's own header. What it
-already does that Endel's mechanism cannot:
+this way on purpose and documented as such in the file's own header. Four
+properties carry the weight:
 
 1. **Multi-signal fusion with an agreement rule**: HR-up + HRV-down is
    scored as the coherent sympathetic-activation signature (weight 1.0);
    HR-up alone is damped (weight 0.55); HR-up with HRV *also* up is treated
    as more likely a detector artefact than a real event (weight 0.35). This
    is asserted by a test (`agreement weighting: HR-up + HRV-down... pulls
-   harder than HR-up alone`), not just claimed. Endel's engine reads HR
-   only.
+   harder than HR-up alone`), not just claimed. Requiring agreement is what
+   makes the loop robust to a camera estimate that is confidently wrong in
+   a single channel.
 2. **Personalised**, via the baseline above, not a fixed threshold.
 3. **Multi-dimensional response** — tempo, arousal, density, and tension
    move together along one physiologically-motivated direction, not a
@@ -76,7 +79,7 @@ already does that Endel's mechanism cannot:
    signal says. Tested adversarially — feeding a 170 bpm reading with
    disagreeing HRV into sleep mode and asserting the clamp holds
    (`packages/protocol/test/controller.test.js`, 6/6 passing). This is
-   Part 6's literal safety requirement, enforced as a second, independent
+   the literal safety requirement, enforced as a second, independent
    layer on top of the engine's own `slewToward` rate limiter — a
    regression in either layer alone still leaves the other standing.
 
@@ -99,7 +102,7 @@ the same thing.
 
 ## N-of-1 experimentation engine: not built, but has a real substrate now
 
-The blinded micro-A/B engine described in Part 2 pillar 6 needs: a
+The blinded micro-A/B experimentation engine needs: a
 randomised withholding design, a minimum-N policy, and a real effect-size
 computation with honesty about confidence. None of that exists. What *does*
 exist as of this session, and is the actual prerequisite for it:
@@ -113,7 +116,7 @@ pipeline from scratch" problem.
 
 ## Simulation environment for pre-human testing: partially satisfied
 
-Part 4 asks for "a simulation environment with synthetic physiologies for
+The deliverable list calls for "a simulation environment with synthetic physiologies for
 pre-human testing." What exists: the rPPG synthetic-trace generator in
 `rppg.test.js` (dichromatic model + noise + drift + jitter) and the
 controller's adversarial hand-picked test cases. What's missing: a

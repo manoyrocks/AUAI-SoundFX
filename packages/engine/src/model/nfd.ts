@@ -2,8 +2,8 @@
  * Neural Field Decoder (NFD)
  * =========================
  *
- * The NFD is the piece that structurally replaces "pick and gate a pre-authored
- * stem". It is a small MLP that maps
+ * The NFD is what turns an abstract position in latent space into concrete
+ * synthesis parameters. It is a small MLP that maps
  *
  *     [ latent z (16) , normalised ControlVector (10) ]  ->  46 synthesis params
  *
@@ -12,13 +12,13 @@
  * *timbre coordinates* of a resonator bank and a spectral bed that synthesise
  * every sample from silence.
  *
- * Why an MLP and not a diffusion/RVQ model in the worklet: the worklet thread
- * has a hard ~2.6 ms budget per quantum and no GPU access. The large streaming
- * generative model (see docs/03-a2-generative-model.md) runs on the *main*
+ * Why an MLP and not a larger generative network in the worklet: the worklet
+ * thread has a hard ~2.6 ms budget per quantum and no GPU access. The planned
+ * large streaming model (see docs/03-synthesis-model.md) runs on the *main*
  * thread over WebGPU at ~10 Hz and emits latent trajectories and style
  * embeddings; the NFD is the distilled, real-time decoder that turns those into
  * per-quantum synthesis parameters without ever touching the audio deadline.
- * This split is what makes neural generation viable on a phone at <5%/hr.
+ * This split is what keeps neural generation viable on a phone at <5%/hr.
  *
  * Shape: 26 -> 48 -> 48 -> 46, SiLU hidden, grouped output activations.
  * ~5.9k parameters, ~5.7k MAC per evaluation, ~0.5 MFLOP/s at control rate.

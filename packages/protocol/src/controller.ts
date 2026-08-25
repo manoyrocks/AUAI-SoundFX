@@ -7,20 +7,20 @@ import type { StateVector } from "./state.js";
  *
  * This is the *bounded, hand-specified* control law that ships at M1. It is
  * intentionally not the learned safe-RL policy described in the architecture
- * doc (docs/04-a3-biosignals-and-control.md) — that requires weeks of
- * per-user dose-response data this build cannot have on day one. What it is:
- * a fusion-aware, saturating, hard-clamped proportional controller that is
- * already a structural improvement on Endel's mechanism in three ways:
+ * doc (docs/04-biosignals-and-control.md) — that requires weeks of per-user
+ * dose-response data this build cannot have on day one. What it is: a
+ * fusion-aware, saturating, hard-clamped proportional controller built around
+ * three properties:
  *
  *  1. Multi-signal: it reads HR *and* HRV and only responds strongly when they
- *     agree (elevated HR + suppressed HRV is the physiologically coherent
+ *     agree. Elevated HR with suppressed HRV is the physiologically coherent
  *     signature of sympathetic activation; either alone is a weaker, noisier
- *     signal). Endel's engine reads HR only.
+ *     signal that a camera estimate can easily fake.
  *  2. Personalised: it compares against this user's own online-learned
  *     baseline (see baseline.ts), not a fixed population threshold.
  *  3. Multi-dimensional response: it moves tempo, arousal, density and
- *     tension together along a physiologically motivated direction, not a
- *     single BPM dial.
+ *     tension together along a physiologically motivated direction, rather
+ *     than turning a single tempo dial.
  *
  * It will be swapped for the learned controller behind the same
  * `computeAdjustment` signature at M2 — nothing downstream needs to change.

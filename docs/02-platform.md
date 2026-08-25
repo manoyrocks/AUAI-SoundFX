@@ -1,4 +1,4 @@
-# A4 — Full-Stack/Platform Engineer
+# Platform and build
 
 Component: `apps/web/*`, root workspace configuration.
 
@@ -42,7 +42,7 @@ or crashed UI.
 **Local telemetry/outcomes, explicitly not analytics:** `apps/web/src/
 sessionStore.ts` persists session outcomes to `localStorage` only. There is
 no analytics SDK, no crash reporter, no first- or third-party tracking
-script anywhere in `apps/web`. "Telemetry with privacy budgets" per Part 3's
+script anywhere in `apps/web`. Telemetry with privacy budgets, per the
 non-negotiables is satisfied by *not collecting it off-device at all* at
 this stage, which is a stricter bar than a budgeted collection pipeline
 would be — the honest gap is that this also means there is currently no way
@@ -54,10 +54,10 @@ to detect the app breaking for a real user except them telling you.
 Multiplatform or Rust-core-plus-native-UI project, platform-specific audio
 backends (AVAudioEngine / Oboe), and an actual device or emulator to verify
 against — none of which exist in this environment. **Recommendation on the
-RN/Expo vs. native question the spec asks engineers to resolve:** go native
+cross-platform vs. native question:** go native
 (SwiftUI/Compose) over React Native/Expo for the audio-adjacent UI
 specifically, not for the whole app. The reasoning follows directly from
-what A1 already had to guarantee for the web build: real-time audio
+what the web build already had to guarantee: real-time audio
 correctness requires the render callback to be isolated from anything that
 can pause unpredictably (GC, a slow re-render, a bridge round-trip). RN's
 JS-thread/native-bridge architecture reintroduces exactly the coupling the
@@ -76,7 +76,7 @@ and isn't — flagged in [00-orchestrator.md](00-orchestrator.md) as
 correctly deprioritized, not forgotten.
 
 **SDK/API surface.** Not started; explicitly "design for, don't build
-first" per Part 2's business/ecosystem framing.
+first".
 
 **CI/CD.** No pipeline configuration exists (no GitHub Actions/etc). The
 repo *is* CI-ready in the sense that `npm test` (build every package,
@@ -96,5 +96,5 @@ duplicated in real text elsewhere), and a labelled camera-toggle switch that
 previously had no accessible name at all (`read_page` showed it as a bare
 `button` with no label before the fix). **Not done**: a haptic-only,
 no-audio relaxation mode for hearing-impaired users (explicitly named in
-Part 3's non-negotiables) and a full screen-reader walkthrough — both real,
+the accessibility requirements) and a full screen-reader walkthrough — both real,
 scoped M4 work, not started here.

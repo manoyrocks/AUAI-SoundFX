@@ -1,6 +1,6 @@
 # Privacy — plain-language data map
 
-Part 6 requires a published, plain-language data map. This is it, kept
+This is the published, plain-language data map, kept
 accurate to what the code actually does rather than what a privacy policy
 template would say.
 
@@ -73,7 +73,7 @@ timestamps.
    session's first minute or two contributes nothing to the fit.
 3. **No differential-privacy or federated-aggregation path exists**, because
    nothing is aggregated yet — there is no cloud component in this build at
-   all (see [02-a4-platform.md](02-a4-platform.md)). The spec's DP
+   all (see [02-platform.md](02-platform.md)). The differential-privacy
    requirement applies to a feature that hasn't been built rather than being
    unmet by something that has.
 

@@ -4,11 +4,11 @@ import { Rng } from "./dsp/rng.js";
  * Adaptive-limit just-intonation lattice walker
  * =============================================
  *
- * Incumbent engines constrain themselves to a pentatonic scale in 12-TET at
- * A=440 and call the simplicity a feature. Two problems: a fixed 5-note scale
- * is exactly what makes months of listening feel same-y, and equal temperament
- * means every interval except the octave is mistuned, so sustained pads beat
- * against themselves — the roughness the design was trying to avoid.
+ * Two problems rule out the obvious approach of a fixed scale in equal
+ * temperament. A small fixed note set is exactly what makes months of
+ * listening feel same-y. And equal temperament mistunes every interval
+ * except the octave, so sustained pads beat against themselves — producing
+ * the roughness a calm texture is trying to avoid.
  *
  * SoundFX instead walks a just-intonation lattice. A pitch is a point
  * (b, c, d) meaning the ratio 3^b * 5^c * 7^d reduced into an octave. Intervals
@@ -23,10 +23,11 @@ import { Rng } from "./dsp/rng.js";
  * tension 0 admits only octaves and fifths; tension 1 opens 7-limit territory
  * (septimal thirds, neutral-sounding intervals, wide clusters). Harmonic
  * tension therefore becomes a *continuous, controllable* dimension rather than
- * a fixed scale choice — something a scale-based engine structurally cannot do.
+ * a fixed scale choice. A scale is a discrete set; this is a continuous
+ * region whose size the controller can steer.
  *
- * Reference pitch is arbitrary and slowly drifting. There is no 440 Hz
- * mysticism here; see docs/07-claims.md.
+ * Reference pitch is arbitrary and slowly drifting. No particular tuning
+ * frequency is claimed to have any intrinsic property; see docs/07-claims.md.
  */
 
 const LOG2_3 = Math.log2(3);
