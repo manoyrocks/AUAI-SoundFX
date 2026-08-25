@@ -27,7 +27,7 @@ rate.
 npm test
 ```
 
-Builds every workspace package and runs the full suite (96 tests).
+Builds every workspace package and runs the full suite (114 tests).
 
 ## What it does
 
@@ -65,6 +65,14 @@ a sequence of control-vector waypoints the scheduler interpolates between.
 **An efficacy dashboard that declines to overclaim** — sample counts beside
 every number, and a standing caveat that before/after readings are not
 evidence of causation.
+
+**Installable and fully offline.** A web manifest, icons and a service
+worker make it installable to a home screen; once installed it loads and
+synthesises audio with no network at all. Verified offline on desktop and on
+an Android tablet.
+
+**Deletable.** The Data tab lists every store with its real size and removes
+any or all of it — resetting live state, not just clearing storage.
 
 ## Packages
 

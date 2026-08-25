@@ -22,10 +22,29 @@ export class ScalarBaseline {
   private nEff = 2;
   private readonly halfLifeSamples: number;
 
+  private readonly initialMean: number;
+  private readonly initialVariance: number;
+
   constructor(initialMean: number, initialVariance: number, halfLifeSamples = 180) {
     this.mean = initialMean;
     this.variance = initialVariance;
     this.halfLifeSamples = halfLifeSamples;
+    this.initialMean = initialMean;
+    this.initialVariance = initialVariance;
+  }
+
+  /**
+   * Return to the untrained prior.
+   *
+   * Needed so that deleting the stored baseline actually deletes it: clearing
+   * only the persisted copy would leave the live, already-learned baseline
+   * steering the controller for the rest of the session, which is not what
+   * "delete my data" means to anyone.
+   */
+  reset(): void {
+    this.mean = this.initialMean;
+    this.variance = this.initialVariance;
+    this.nEff = 2;
   }
 
   get value(): number {
@@ -54,6 +73,28 @@ export class ScalarBaseline {
   zScore(value: number, minStd: number): number {
     return (value - this.mean) / Math.max(minStd, this.std);
   }
+
+  /**
+   * Serialisable state, for persisting a learned baseline across sessions.
+   * `weight` is the effective sample count, which is what determines
+   * `trusted` — restoring mean and variance without it would produce a
+   * baseline that looks confident but has no evidence behind it.
+   */
+  snapshot(): { mean: number; variance: number; weight: number } {
+    return { mean: this.mean, variance: this.variance, weight: this.nEff };
+  }
+
+  /**
+   * Restore a previous snapshot. Values are clamped to the same ranges the
+   * update path maintains, so a corrupt or hand-edited store cannot inject a
+   * degenerate baseline that the controller would then act on.
+   */
+  restore(s: { mean: number; variance: number; weight: number }): void {
+    if (!Number.isFinite(s.mean) || !Number.isFinite(s.variance) || !Number.isFinite(s.weight)) return;
+    this.mean = s.mean;
+    this.variance = Math.max(1e-6, s.variance);
+    this.nEff = Math.min(500, Math.max(0, s.weight));
+  }
 }
 
 /**
@@ -69,5 +110,11 @@ export class PhysiologyBaseline {
   update(s: StateVector): void {
     if (s.heartRateBpm != null) this.hr.update(s.heartRateBpm, s.heartRateConfidence);
     if (s.hrvRmssdMs != null) this.hrv.update(s.hrvRmssdMs, s.hrvConfidence);
+  }
+
+  /** Return both signals to their untrained priors. See ScalarBaseline.reset. */
+  reset(): void {
+    this.hr.reset();
+    this.hrv.reset();
   }
 }

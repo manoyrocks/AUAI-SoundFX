@@ -1,11 +1,45 @@
-import { defineConfig } from "vite";
+import { defineConfig, type Plugin } from "vite";
 import { fileURLToPath, URL } from "node:url";
+
+/**
+ * Emit the list of content-hashed build outputs for the service worker to
+ * precache.
+ *
+ * Without this the SW can only precache the static paths it knows by name.
+ * The hashed JS/CSS bundles are fetched by the browser *before* the worker
+ * takes control on a first visit, so its fetch handler never sees them and
+ * they never enter the cache — the app then appears to support offline while
+ * actually serving a shell with no bundle. It self-heals on a second visit,
+ * which is exactly the kind of bug that passes a casual test and fails a
+ * real user who installs and immediately loses connectivity.
+ *
+ * Emitting the list at build time keeps sw.js free of hashes and needs no
+ * regeneration step of its own.
+ */
+function precacheManifest(): Plugin {
+  return {
+    name: "soundfx-precache-manifest",
+    apply: "build",
+    generateBundle(_options, bundle) {
+      const urls = Object.keys(bundle)
+        .filter((f) => /\.(js|css)$/.test(f))
+        .map((f) => `/${f}`)
+        .sort();
+      this.emitFile({
+        type: "asset",
+        fileName: "precache-manifest.json",
+        source: JSON.stringify({ assets: urls }, null, 2),
+      });
+    },
+  };
+}
 
 function pkgSrc(pkg: string): string {
   return fileURLToPath(new URL(`../../packages/${pkg}/src/index.ts`, import.meta.url));
 }
 
 export default defineConfig({
+  plugins: [precacheManifest()],
   resolve: {
     // Package.json "main"/"exports" point at compiled dist/ output — the
     // correct public interface for a plain-Node consumer (see the workspace
@@ -34,7 +68,14 @@ export default defineConfig({
   },
   build: {
     target: "es2021",
-    sourcemap: true,
+    // No sourcemap in production. There is no error-reporting backend to
+    // symbolicate against — by design, since nothing leaves the device — so
+    // shipping ~250 KB of map per deploy buys nothing and roughly quadruples
+    // the JS payload. Dev builds are unaffected and remain fully mapped.
+    sourcemap: false,
+    // Warn earlier than Vite's 500 KB default: this app has no third-party
+    // runtime dependencies, so any large jump is a regression worth seeing.
+    chunkSizeWarningLimit: 300,
   },
   worker: {
     format: "es",

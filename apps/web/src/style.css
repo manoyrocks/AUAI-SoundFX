@@ -70,6 +70,99 @@ body {
   overflow: hidden;
 }
 
+/* ============================================= boot / skip link */
+
+/*
+  Server-rendered boot state, removed by main.ts once the UI mounts. Without
+  it, a bundle that fails to parse leaves a blank dark page with no
+  indication that anything was ever supposed to happen.
+*/
+#boot {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  background: var(--bg);
+  padding: 24px;
+  text-align: center;
+}
+#boot.boot-hidden {
+  display: none;
+}
+.boot-mark {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid var(--line-strong);
+  box-shadow: inset 0 0 0 6px rgba(124, 240, 200, 0.16);
+  animation: boot-pulse 2.4s ease-in-out infinite;
+}
+@keyframes boot-pulse {
+  0%,
+  100% {
+    opacity: 0.4;
+    transform: scale(0.94);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+.boot-text {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text-faint);
+  line-height: 1.6;
+  max-width: 40ch;
+}
+#boot.boot-failed .boot-mark {
+  animation: none;
+  border-color: var(--danger);
+  box-shadow: inset 0 0 0 6px rgba(240, 121, 124, 0.18);
+}
+#boot.boot-failed .boot-text {
+  color: var(--text-dim);
+}
+.boot-retry {
+  appearance: none;
+  border: 1px solid var(--line-strong);
+  background: transparent;
+  color: var(--text-dim);
+  font-family: var(--mono);
+  font-size: 12px;
+  min-height: var(--tap);
+  padding: 10px 22px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.boot-retry:hover {
+  color: var(--text);
+  border-color: var(--text-faint);
+}
+
+/* Visible only on keyboard focus — the standard skip-link pattern. */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 200;
+  background: var(--accent);
+  color: #04140f;
+  font-family: var(--mono);
+  font-size: 12px;
+  padding: 12px 18px;
+  border-radius: 0 0 8px 0;
+  text-decoration: none;
+}
+.skip-link:focus {
+  left: 0;
+}
+
 /* =========================================================== topbar */
 
 /*
@@ -89,6 +182,10 @@ body {
 }
 
 .wordmark {
+  /* An <h1> for document structure; the visual treatment is unchanged, so
+     the UA's default size and margins have to be neutralised explicitly. */
+  margin: 0;
+  font-weight: 400;
   font-family: var(--mono);
   font-size: 12px;
   letter-spacing: 0.2em;
@@ -437,7 +534,7 @@ body {
   padding: var(--pad);
 }
 
-.panel h3 {
+.panel h2 {
   margin: 0 0 12px;
   font-size: 11px;
   letter-spacing: 0.12em;
@@ -1201,6 +1298,111 @@ body {
   padding: 1px 5px;
   margin-left: 6px;
   vertical-align: middle;
+}
+
+/* ========================================================= your data */
+
+.data-intro {
+  font-size: 12px;
+  color: var(--text-dim);
+  line-height: 1.65;
+  margin: 0 0 16px;
+}
+
+.data-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.data-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 0;
+  border-top: 1px solid var(--line);
+}
+.data-row:first-child {
+  border-top: none;
+}
+.data-row.data-empty .data-label,
+.data-row.data-empty .data-desc {
+  color: var(--text-faint);
+}
+
+.data-meta {
+  flex: 1 1 200px;
+  min-width: 0;
+}
+.data-label {
+  font-size: 13px;
+  color: var(--text);
+  margin-bottom: 3px;
+}
+.data-desc {
+  font-size: 11px;
+  color: var(--text-faint);
+  line-height: 1.55;
+}
+
+.data-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: none;
+}
+.data-size {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-faint);
+  white-space: nowrap;
+}
+
+.data-clear {
+  appearance: none;
+  border: 1px solid var(--line-strong);
+  background: transparent;
+  color: var(--text-dim);
+  font-family: var(--mono);
+  font-size: 11px;
+  min-height: var(--tap);
+  padding: 8px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.2s, border-color 0.2s, background 0.2s;
+}
+.data-clear:hover {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+/* Armed state is unmistakable: destructive actions should not look idle. */
+.data-clear.armed {
+  color: #1a0709;
+  background: var(--danger);
+  border-color: var(--danger);
+  font-weight: 600;
+}
+
+.data-all {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line-strong);
+}
+.data-total {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-faint);
+}
+.data-none {
+  font-size: 12px;
+  color: var(--text-faint);
+  margin: 14px 0 0;
 }
 
 /* ======================================================= footer note */

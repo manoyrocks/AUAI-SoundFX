@@ -11,10 +11,11 @@ template would say.
 | Camera video frames | `apps/web/src/camera.ts` (`getUserMedia`) | Nowhere — drawn to an in-memory `<video>` element and a same-process analysis canvas, never written to disk | Nowhere. No `fetch`/`XHR`/`WebSocket` exists in `packages/biosignal` or `apps/web/src/camera.ts` — this is checkable by grep, not a claim to take on faith. |
 | Rolling RGB trace (≤30s window) | `packages/biosignal/src/session.ts` | In-memory array, evicted continuously (`MAX_WINDOW_S` cutoff) | Nowhere |
 | Instantaneous HR/HRV reading | `packages/biosignal/src/session.ts` | In-memory (`RppgSession.reading`) | Nowhere directly; feeds the on-device baseline/controller only |
-| Personal HR/HRV baseline (running mean/variance) | `packages/protocol/src/baseline.ts` | In-memory for the session's lifetime; not currently persisted across page reloads | Nowhere |
+| Personal HR/HRV baseline (running mean/variance) | `packages/protocol/src/baseline.ts` | In-memory, and persisted locally — see the row below | Nowhere |
 | Session outcome (mode, start/end HR, duration) | `packages/protocol/src/outcomes.ts` | `localStorage` (`apps/web/src/sessionStore.ts`), this browser/device only | Nowhere |
 | Personal Rhythm Model | `packages/protocol/src/rhythm/*` | `localStorage` (`apps/web/src/rhythmStore.ts`), this browser/device only. **Sufficient statistics only** — see below | Nowhere |
 | Gated-technique acknowledgements | `apps/web/src/main.ts` | `localStorage`. A record that a warning was read, never a health disclosure — see [06-safety.md](06-safety.md) | Nowhere |
+| Personal HR/HRV baseline | `packages/protocol/src/baseline.ts` | `localStorage` (`apps/web/src/baselineStore.ts`), this device only. Persisted only once trusted, and discarded after 30 days | Nowhere |
 | Control vector / audio telemetry | `packages/engine` | In-memory, used to drive UI and audio only | Nowhere |
 
 **There is currently no network request anywhere in the closed-loop or
@@ -55,23 +56,28 @@ timestamps.
   storage removes it completely; there is currently no in-app "clear my
   history" button, which is a real, flagged gap (see below).
 
+## Deleting your data
+
+The Data tab lists every store with its real entry count and size, and
+deletes any one of them or all of them. Three properties make this a real
+control rather than a gesture:
+
+- **Deletion resets live state, not just storage.** Clearing the rhythm
+  model replaces the in-memory model; clearing the baseline resets it to its
+  untrained prior; clearing technique acknowledgements turns the gated
+  toggles back off. Removing the persisted copy alone would leave the
+  learned state steering the session and re-persist it at the next session
+  end — which is not what "delete my data" means to anyone.
+- **"Delete everything" sweeps the actual keyspace**, not the registry, so a
+  key written by an older version whose descriptor no longer exists is still
+  removed. Tested, including that it leaves other apps on the origin alone.
+- **Every store is declared in one file** (`apps/web/src/storage.ts`), so the
+  deletion UI cannot silently miss a store some panel added later. A test
+  asserts every declared store is namespaced and uniquely keyed.
+
 ## Known gaps (flagged, not hidden)
 
-1. **No in-app data-deletion control.** A user can clear `localStorage` via
-   browser settings, but the app itself offers no "delete my session
-   history" action. This should exist before any real user relies on the
-   product — recommended for the next work cycle.
-2. **The personal baseline does not persist across reloads.** Every fresh
-   page load starts the HR/HRV baseline from a wide, untrusted prior
-   (`ScalarBaseline`'s constructor defaults) rather than resuming a user's
-   established baseline. This is a UX/accuracy gap more than a privacy one,
-   but is recorded here because the natural fix (persisting the baseline)
-   is itself a privacy decision that needs the same "local by default,
-   explicit if it ever leaves the device" treatment as everything else.
-   It also has a real accuracy consequence now that the Rhythm Model exists:
-   the model only accepts readings once the baseline is `trusted`, so a
-   session's first minute or two contributes nothing to the fit.
-3. **No differential-privacy or federated-aggregation path exists**, because
+1. **No differential-privacy or federated-aggregation path exists**, because
    nothing is aggregated yet — there is no cloud component in this build at
    all (see [02-platform.md](02-platform.md)). The differential-privacy
    requirement applies to a feature that hasn't been built rather than being

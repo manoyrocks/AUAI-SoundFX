@@ -14,6 +14,7 @@ import {
 import type { RppgReading } from "@soundfx/biosignal";
 import {
   PhysiologyBaseline,
+  PersonalRhythmModel,
   computeAdjustment,
   OutcomeRecorder,
   computeDelta,
@@ -37,6 +38,9 @@ import { loadSessions, saveSession } from "./sessionStore.js";
 import { loadRhythmModel, saveRhythmModel } from "./rhythmStore.js";
 import { renderRhythmPanel } from "./rhythmPanel.js";
 import { renderSciencePanel } from "./sciencePanel.js";
+import { bootSucceeded, installGlobalErrorHandlers, registerServiceWorker } from "./boot.js";
+import { renderDataPanel } from "./dataPanel.js";
+import { restoreBaseline, saveBaseline } from "./baselineStore.js";
 
 const MODES: { key: AnchorName; label: string }[] = [
   { key: "deepWork", label: "Deep Work" },
@@ -62,16 +66,19 @@ const TABS = [
   { id: "data", label: "Data" },
 ] as const;
 
+// Installed before any UI construction so a throw during mount is caught.
+installGlobalErrorHandlers();
+
 const app = document.getElementById("app")!;
 app.innerHTML = `
-  <div class="topbar">
-    <div class="wordmark"><b>SOUND</b>FX</div>
-    <div class="modes" id="modes" role="group" aria-label="Session mode">
+  <header class="topbar">
+    <h1 class="wordmark"><b>SOUND</b>FX</h1>
+    <nav class="modes" id="modes" aria-label="Session mode">
       ${MODES.map((m, i) => `<button class="mode-btn${i === 0 ? " active" : ""}" data-mode="${m.key}" aria-pressed="${i === 0}">${m.label}</button>`).join("")}
-    </div>
-  </div>
-  <div class="main">
-    <div class="stage">
+    </nav>
+  </header>
+  <main class="main" id="main">
+    <section class="stage" aria-label="Session">
       <canvas id="field" aria-hidden="true"></canvas>
       <div class="stage-content">
         <div class="phase-banner" id="phaseBanner" style="display:none" aria-live="polite">
@@ -91,8 +98,8 @@ app.innerHTML = `
           </div>
         </div>
       </div>
-    </div>
-    <div class="side">
+    </section>
+    <div class="side" role="complementary" aria-label="Instrumentation">
       <div class="tabs" role="tablist" aria-label="Panels">
         ${TABS.map(
           (t, i) =>
@@ -105,7 +112,7 @@ app.innerHTML = `
       <div class="tab-panels">
         <div class="tab-panel" id="panel-now" role="tabpanel" aria-labelledby="tab-now">
           <div class="panel span-2">
-            <h3>Heart rate — camera rPPG</h3>
+            <h2>Heart rate — camera rPPG</h2>
             <div class="hr-row">
               <div class="hr-value" id="hrValue" aria-live="polite">—</div>
               <div class="hr-unit">bpm</div>
@@ -124,47 +131,52 @@ app.innerHTML = `
           </div>
 
           <div class="panel">
-            <h3>Control vector (live)</h3>
+            <h2>Control vector (live)</h2>
             <div class="vector-grid" id="vectorGrid"></div>
           </div>
 
           <div class="panel">
-            <h3>Engine telemetry</h3>
+            <h2>Engine telemetry</h2>
             <div class="telemetry-grid" id="telemetryGrid"></div>
           </div>
         </div>
 
         <div class="tab-panel" id="panel-plan" role="tabpanel" aria-labelledby="tab-plan" hidden>
           <div class="panel span-2">
-            <h3>Why this mode sounds like this</h3>
+            <h2>Why this mode sounds like this</h2>
             <div id="modeScience"></div>
           </div>
 
           <div class="panel span-2">
-            <h3>Your rhythm — next 24 hours</h3>
+            <h2>Your rhythm — next 24 hours</h2>
             <div id="rhythmPanel"></div>
           </div>
 
           <div class="panel span-2">
-            <h3>Protocols</h3>
+            <h2>Protocols</h2>
             <div class="protocol-list" id="protocolList"></div>
           </div>
         </div>
 
         <div class="tab-panel" id="panel-data" role="tabpanel" aria-labelledby="tab-data" hidden>
           <div class="panel span-2">
-            <h3>Does this work for me?</h3>
+            <h2>Does this work for me?</h2>
             <div id="dashboard"></div>
           </div>
 
           <div class="panel">
-            <h3>Session history — this device only</h3>
+            <h2>Session history — this device only</h2>
             <div class="session-list" id="sessionList"></div>
           </div>
 
           <div class="panel">
-            <h3>Optional techniques — off by default</h3>
+            <h2>Optional techniques — off by default</h2>
             <div class="technique-list" id="techniqueList"></div>
+          </div>
+
+          <div class="panel span-2">
+            <h2>Your data — stored on this device</h2>
+            <div id="dataPanel"></div>
           </div>
         </div>
       </div>
@@ -178,7 +190,7 @@ app.innerHTML = `
       </div>
       </div>
     </div>
-  </div>
+  </main>
 `;
 
 // ---------------------------------------------------------------- DOM refs
@@ -212,6 +224,7 @@ const phaseFill = document.getElementById("phaseFill") as HTMLDivElement;
 const distressNotice = document.getElementById("distressNotice") as HTMLDivElement;
 const rhythmPanel = document.getElementById("rhythmPanel")!;
 const modeSciencePanel = document.getElementById("modeScience")!;
+const dataPanelEl = document.getElementById("dataPanel")!;
 
 // ---------------------------------------------------------------- tabs
 
@@ -279,6 +292,10 @@ let sessionRunning = false;
 let cameraEnabled = false;
 let lastState: StateVector | null = null;
 const baseline = new PhysiologyBaseline();
+// Resume a previously learned baseline so the closed loop is usable from the
+// first reading rather than spending the first minute or two of every
+// session re-learning what normal means. Silently no-ops if absent or stale.
+const baselineRestored = restoreBaseline(baseline);
 
 let displayCurrent: ControlVector = anchor(currentMode);
 let displayTarget: ControlVector = anchor(currentMode);
@@ -288,7 +305,9 @@ const camera = new CameraSensor(selfVideo, selfOverlay);
 const breathPacer = new BreathPacer(displayCurrent);
 const outcomeRecorder = new OutcomeRecorder();
 const distressMonitor = new DistressMonitor();
-const rhythmModel = loadRhythmModel();
+// Mutable: clearing stored data must be able to replace the live model, not
+// just the persisted copy. See renderData's onCleared handler.
+let rhythmModel = loadRhythmModel();
 
 /** Active protocol, if the user started one instead of a free-running mode. */
 let activeProtocol: Protocol | null = null;
@@ -504,6 +523,38 @@ function renderRhythm(): void {
 }
 renderRhythm();
 renderModeScience();
+
+function renderData(): void {
+  renderDataPanel({
+    container: dataPanelEl,
+    onCleared: (what) => {
+      // Refresh whatever the cleared store fed, so the UI can never keep
+      // showing data the user just deleted.
+      if (what === "sessions" || what === "all") {
+        renderSessionHistory();
+        renderDashboard();
+      }
+      if (what === "rhythm" || what === "all") {
+        // Replace the in-memory model too. Clearing only storage would leave
+        // the learned rhythm live for the rest of the session, so the user
+        // would delete their data and still be shown a forecast built from
+        // it — and it would be re-persisted at the next session end.
+        rhythmModel = new PersonalRhythmModel();
+        renderRhythm();
+      }
+      if (what === "baseline" || what === "all") baseline.reset();
+      if (what === "techniques" || what === "all") {
+        // Reset the in-memory copy too. Clearing only the stored value would
+        // leave the toggles on until reload, so the user would see their
+        // acknowledgements still active immediately after deleting them —
+        // and, worse, gated techniques would remain enabled.
+        techniqueConsent = {};
+        renderTechniques();
+      }
+    },
+  });
+}
+renderData();
 
 /** Advance the active protocol; returns its target, or null if none/finished. */
 function protocolTarget(): ControlVector | null {
@@ -740,10 +791,12 @@ beginBtn.addEventListener("click", async () => {
           renderDashboard();
         }
       }
-      // Persist the learned rhythm at session end rather than per reading —
-      // one localStorage write instead of one per second.
+      // Persist learned state at session end rather than per reading — one
+      // localStorage write instead of one per second.
       saveRhythmModel(rhythmModel);
+      saveBaseline(baseline);
       renderRhythm();
+      renderData();
     }
   }
 });
@@ -887,7 +940,12 @@ if (import.meta.env.DEV) {
       protocolStartedAtMs = performance.now() - minutes * 60000;
       retarget();
     },
-    rhythmModel,
+    // Getter, not a value: rhythmModel is reassigned when the user deletes
+    // their rhythm data, and a captured reference would keep reporting the
+    // discarded model.
+    get rhythmModel() {
+      return rhythmModel;
+    },
     /**
      * Seed the Rhythm Model with synthetic history so the "ready" state can
      * be exercised without waiting a real week. Dev-only (this whole block
@@ -921,3 +979,14 @@ if (import.meta.env.DEV) {
     },
   };
 }
+
+// ------------------------------------------------------------ startup done
+
+/**
+ * The UI is mounted and interactive. Dismiss the boot screen and let the
+ * global error handler know that later exceptions should not replace a
+ * working session with a fatal-error page.
+ */
+document.dispatchEvent(new Event("soundfx:mounted"));
+bootSucceeded();
+registerServiceWorker();
